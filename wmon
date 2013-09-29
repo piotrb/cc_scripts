@@ -1,0 +1,49 @@
+os.loadAPI("utils")
+os.loadAPI("wlan")
+
+function server(mon, channel)
+  wlan.init(channel)
+  wlan.listen()
+  wlan.registerHandler("monitor", function(data)
+    method, a, b, c, d, e = unpack(data)
+    a,b,c,d,e,f,g = peripheral.call(mon, method, a, b, c, d, e)
+    wlan.send("monitor_" .. method, {a,b,c,d,e,f,g})
+    end)
+  parallel.waitForAll(wlan.eventLoop)
+end
+
+function waitResponse(kind)
+  return(wlan.receiveNext("monitor_" .. kind))
+end
+
+function client(channel)
+  wlan.init(channel)
+end
+
+function clear()
+  wlan.send("monitor", {"clear"})
+end
+
+function write(a)
+  wlan.send("monitor", {"write", a})
+end
+
+function setCursorPos(x,y)
+  wlan.send("monitor", {"setCursorPos", x, y})
+end
+
+function scroll(a)
+  wlan.send("monitor", {"scroll", a})
+end
+
+function getSize()
+  wlan.send("monitor", {"getSize"})
+  rsp = waitResponse("getSize")
+  return rsp[1], rsp[2]
+end
+
+function getCursorPos()
+  wlan.send("monitor", {"getCursorPos"})
+  rsp = waitResponse("getCursorPos")
+  return rsp[1], rsp[2]
+end

@@ -1,0 +1,27 @@
+local configuration = {}
+
+function read()
+  if fs.exists(configuration.filename) then
+    local fh = fs.open(configuration.filename, "r")
+    local raw = fh.readAll()
+    if raw == "[]" then
+      raw = "{}"
+    end
+    local data = json.decode(raw)
+    fh.close()
+    config.data = data
+  else
+    config.data = {}
+  end
+end
+
+function init(filename)
+  configuration.filename = filename
+  read()
+end
+
+function write()
+  local fh = fs.open(configuration.filename, "w")
+  fh.write(json.encode(config.data))
+  fh.close()
+end

@@ -1,0 +1,134 @@
+os.loadAPI("tableext")
+
+------------------------
+-- peripheral detection
+------------------------
+
+function detectDirectPeripherals()
+  local sides = {"top", "left", "right", "bottom", "back", "front"}
+  local combinations = {}
+
+  local detected = {}
+
+  for i, side in ipairs(sides) do
+    table.insert(combinations, side)
+  end
+
+  for i, sideName in ipairs(combinations) do
+    if peripheral.isPresent( sideName ) then
+      table.insert(detected, sideInfo(sideName))
+    end
+  end
+
+  return detected
+
+end
+
+function sideInfo(side)
+  local pType = peripheral.getType(side)
+  if pType == "modem" then
+    if peripheral.call(side, "isWireless") then
+      pType = "wireless_modem"
+    else
+      pType = "wired_modem"
+    end
+  end
+  return({ kind = pType, side = side })
+end
+
+function detectPeripherals()
+
+  local direct_detected = detectDirectPeripherals()
+  local detected = table.copy(direct_detected)
+
+  for i, info in ipairs(direct_detected) do
+
+    if info.kind == "wired_modem" then
+      local modem = peripheral.wrap(info.side)
+      local devices = modem.getNamesRemote();
+      for i, deviceName in ipairs(devices) do
+        local _info = sideInfo(deviceName)
+        if _info.kind ~= "wired_modem" then
+          table.insert(detected, _info)
+        end
+      end
+    end
+  end
+
+  return detected
+end
+
+function findPeripheralSide(pType)
+  for i, info in ipairs(detectPeripherals()) do
+    if info.kind == pType then
+	  return(info.side)
+    end
+  end
+end
+
+function wrapPeripheralTypeWithin(pType, list)
+  for i, info in ipairs(list) do
+    if info.kind == pType then
+      print("Wrapping " .. pType .. " on " .. info.side)
+      return peripheral.wrap(info.side)
+    end
+  end
+end
+
+function wrapPeripheralType(pType)
+  return wrapPeripheralTypeWithin(pType, detectPeripherals())
+end
+
+--------------------
+-- printing methods
+--------------------
+
+function p(o)
+  print(json.encode(o))
+end
+
+function pM(t,o)
+  printM(t, json.encode(o))
+end
+
+function clearM(t)
+  t.clear()
+  t.setCursorPos(1,1)
+end
+
+function printM(t, text)
+  t.write(text)
+  local x, y = t.getCursorPos()
+  local tx, ty = t.getSize()
+  t.setCursorPos(1, y+1)
+  if y+1 > ty then
+    t.scroll(1)
+    t.setCursorPos(1, y)
+  end
+end
+
+function hrM(t)
+  local tx, ty = t.getSize()
+  utils.printM(t, string.rep("-", tx))
+end
+
+function printMCenter(t, text)
+  local tx, ty = t.getSize()
+  local len = string.len(text)
+  local ox = (tx/2) - (len/2)
+  text = string.rep(" ", ox) .. text
+  printM(t, text)
+end
+
+
+---------------------
+-- Number Formatting
+---------------------
+
+function round(val, decimal)
+  if (decimal) then
+    return math.floor( (val * 10^decimal) + 0.5) / (10^decimal)
+  else
+    return math.floor(val+0.5)
+  end
+end

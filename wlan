@@ -1,0 +1,87 @@
+modem = nil
+channel = nil
+handlers = {}
+_loopCR = nil
+
+local _default_handler = function(subject, data)
+  error("no handler defined to process: " .. subject)
+end
+
+eventLoop = function()
+  while true do
+    local event, side, channel1, channel2, body, distance = os.pullEvent("modem_message")
+    local decodedBody = textutils.unserialize(body)
+    local handler = handlers[decodedBody.subject]
+    if handler then
+      handler(decodedBody.data)
+    else
+      _default_handler(decodedBody.subject, decodedBody.data)
+    end
+  end
+end
+
+function init(set_channel)
+  channel = set_channel
+  handlers = {}
+  modem = utils.wrapPeripheralType("wireless_modem")
+  wlan.eventLoop = eventLoop
+end
+
+function send(subject, data)
+  if data == nil then
+    data = {}
+  end
+  local payload = {}
+  payload.subject = subject
+  payload.data = data
+  modem.transmit(channel, 1, textutils.serialize(payload))
+end
+
+function listen()
+  modem.open(channel)
+end
+
+function handleNotification(subject, data)
+  utils.p({subject, data})
+end
+
+function registerHandler(subject, handler)
+  handlers[subject] = handler
+end
+
+function registerDefaultHandler(handler)
+  _default_handler = handler
+end
+
+function handleModemMessage(side, channel1, channel2, body, distance)
+  local decodedBody = textutils.unserialize(body)
+  handleNotification(body.subject, body.data)
+end
+
+function receiveNext(subject)
+  modem.open(channel)
+  while true do
+    local event, side, channel1, channel2, body, distance = os.pullEvent("modem_message")
+    local decodedBody = textutils.unserialize(body)
+    if decodedBody.subject == subject then
+      modem.close(channel)
+      return decodedBody.data
+    else
+      -- keep going
+    end
+  end
+end
+
+function safeLoop()
+  status, err = callp(eventLoop)
+  if not status then
+    print("Loop Crashed: " .. err)
+  end
+end
+
+function backgroundLoop()
+  if not _loopCR then
+    _loopCR = coroutine.create(safeLoop)
+  end
+  coroutine.resume(_loopCR)
+end

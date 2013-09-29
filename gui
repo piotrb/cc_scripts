@@ -1,0 +1,138 @@
+function select(t, title, items)
+
+  local cursor = 1
+  local waiting = true
+  local maxCursor = #items
+
+  local render = function()
+    utils.clearM(t)
+    utils.printMCenter(t, title)
+    utils.hrM(t)
+    -- utils.printMCenter(term, cursor)
+
+    for i, info in ipairs(items) do
+      local marker = " "
+      if cursor == i then
+        marker = "X"
+      end
+      local line = "[" .. marker .. "] " .. info[2]
+      utils.printM(t, line)
+    end
+  end
+
+  while waiting do
+    render()
+    event, arg1 = os.pullEvent("key")
+    if arg1 == keys.up then
+      if cursor > 1 then
+        cursor = cursor - 1
+      end
+    elseif arg1 == keys.down then
+      if cursor < maxCursor then
+        cursor = cursor + 1
+      end
+    elseif arg1 == keys.enter then
+      waiting = false
+      return(items[cursor][1])
+    else
+      -- utils.p({event, arg1})
+      -- sleep(1)
+    end
+  end
+
+end
+
+function window()
+  local info = {
+    widgets = {},
+  }
+  info.render = function(t)
+    utils.clearM(t)
+    for i,control in ipairs(info.widgets) do
+      control.render(t)
+    end
+  end
+  info.update = function()
+    for i,control in ipairs(info.widgets) do
+      control.update()
+    end
+  end
+  info.add = function(control)
+    table.insert(info.widgets, control)
+  end
+  return info;
+end
+
+function labelBox(x, y, w, h, text, align)
+  local info = {
+    text = text,
+    align = align,
+    position = { x = x, y = y },
+    size = { width = w, height = h },
+  }
+  info.update = function()
+  end
+  info.render = function(t)
+    local _text
+    if type(info.text) == "string" then
+      _text = info.text
+    else
+      _text = info.text()
+    end
+
+    t.setCursorPos(info.position.x, info.position.y)
+    utils.printM(t, "+--+")
+    t.setCursorPos(info.position.x, info.position.y+1)
+    utils.printM(t, "|  |")
+    t.setCursorPos(info.position.x, info.position.y+2)
+    utils.printM(t, "+--+")
+
+    local _label = label(info.position.x+1, info.position.y+1, info.size.width-2, info.size.height-2, _text, "left")
+    _label.render(t)
+  end
+  return info;
+end
+
+function label(x, y, w, h, text, align, prefix)
+  local info = {
+    text = text,
+    align = align,
+    prefix = prefix,
+    position = { x = x, y = y },
+    size = { width = w, height = h },
+  }
+  info.update = function()
+  end
+  info.render = function(t)
+    local _text
+    if type(info.text) == "string" then
+      _text = info.text
+    else
+      _text = info.text()
+    end
+    if info.prefix then
+      _text = info.prefix .. _text
+    end
+    t.setCursorPos(info.position.x, info.position.y)
+    if info.align == "center" then
+      utils.printMCenter(t, _text)
+    else
+      utils.printM(t, _text)
+    end
+  end
+  return info;
+end
+
+function hr(y, character)
+  local info = {
+    character = y, character,
+    position = { x = 1, y = y },
+  }
+  info.update = function()
+  end
+  info.render = function(t)
+    t.setCursorPos(info.position.x, info.position.y)
+    utils.hrM(t)
+  end
+  return info;
+end

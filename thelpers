@@ -1,0 +1,127 @@
+rel_pos = {x = 0, y = 0, z = 0}
+rel_rot = 0
+
+function update_rel_pos(x, y, z)
+  if(rel_rot == 0) then
+    rel_pos.x = rel_pos.x + x
+    rel_pos.y = rel_pos.y + y
+  elseif(rel_rot == 1) then
+    rel_pos.x = rel_pos.x + y
+    rel_pos.y = rel_pos.y + x
+  elseif(rel_rot == 2) then
+    rel_pos.x = rel_pos.x - x
+    rel_pos.y = rel_pos.y - y
+  elseif(rel_rot == 3) then
+    rel_pos.x = rel_pos.x - y
+    rel_pos.y = rel_pos.y - x
+  else
+    print("don't know how to deal with rotation: " .. rel_rot)
+  end
+  rel_pos.z = rel_pos.z + z
+end
+
+function moveUp(movement_stack)
+  if(turtle.up()) then
+    update_rel_pos(0, 0, 1)
+    if(movement_stack) then
+      table.insert(movement_stack, "up")
+    end
+  end
+end
+
+function moveDown(movement_stack)
+  if(turtle.down()) then
+    update_rel_pos(0, 0, -1)
+    if(movement_stack) then
+      table.insert(movement_stack, "down")
+    end
+  end
+end
+
+function moveRight(movement_stack)
+  turtle.turnRight()
+  if(turtle.forward()) then
+    update_rel_pos(1, 0, 0)
+    if(movement_stack) then
+      table.insert(movement_stack, "right")
+    end
+  end
+  turtle.turnLeft()
+end
+
+function moveLeft(movement_stack)
+  turtle.turnLeft()
+  if(turtle.forward()) then
+    update_rel_pos(-1, 0, 0)
+    if(movement_stack) then
+      table.insert(movement_stack, "left")
+    end
+  end
+  turtle.turnRight()
+end
+
+function moveForward(movement_stack)
+  if(turtle.forward()) then
+    update_rel_pos(0, 1, 0)
+    if(movement_stack) then
+      table.insert(movement_stack, "forward")
+    end
+  end
+end
+
+function moveBack(movement_stack)
+  if(turtle.back()) then
+    update_rel_pos(0, -1, 0)
+    if(movement_stack) then
+      table.insert(movement_stack, "back")
+    end
+  end
+end
+
+function rotateLeft(movement_stack)
+  turtle.turnLeft()
+  rel_rot = rel_rot - 1
+  if(rel_rot < 0) then
+    rel_rot = 4 + rel_rot
+  end
+  if(movement_stack) then
+    table.insert(movement_stack, "rot_left")
+  end
+end
+
+function rotateRight(movement_stack)
+  turtle.turnRight()
+  rel_rot = rel_rot + 1
+  if(rel_rot > 3) then
+    rel_rot = rel_rot - 4
+  end
+  if(movement_stack) then
+    table.insert(movement_stack, "rot_right")
+  end
+end
+
+function undoStack(movement_stack)
+  while(#movement_stack > 0) do
+    item = table.remove(movement_stack, #movement_stack)
+    if(item == "up") then
+      moveDown(false)
+    elseif(item == "down") then
+      moveUp(false)
+    elseif(item == "right") then
+      moveLeft(false)
+    elseif(item == "left") then
+      moveRight(false)
+    elseif(item == "rot_left") then
+      rotateRight(false)
+    elseif(item == "rot_right") then
+      rotateLeft(false)
+    elseif(item == "forward") then
+      moveBack(false)
+    elseif(item == "back") then
+      moveForward(false)
+    else
+      print("don't know how to undo: " .. item)
+    end
+  end
+end
+

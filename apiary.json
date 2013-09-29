@@ -1,0 +1,42 @@
+{
+  "tile_for_apiculture_0_4": [ 7,21],
+  "tile_for_apiculture_0_3": [10,21],
+  "tile_for_apiculture_0_5": [ 7,25],
+  "tile_for_apiculture_0_6": [10,25],
+
+  "tile_for_apiculture_0_7": [ 7,31],
+  "tile_for_apiculture_0_8": [10,31],
+  "tile_for_apiculture_0_9": [ 7,35],
+  "tile_for_apiculture_0_2": [10,35],
+
+  "tile_for_apiculture_0_10": [13,44],
+  "tile_for_apiculture_0_11": [16,44],
+  "tile_for_apiculture_0_12": [13,40],
+  "tile_for_apiculture_0_13": [16,40],
+
+  "tile_for_apiculture_0_14": [21,44],
+  "tile_for_apiculture_0_15": [24,44],
+  "tile_for_apiculture_0_16": [21,40],
+  "tile_for_apiculture_0_17": [24,40],
+
+  "tile_for_apiculture_0_18": [28,21],
+  "tile_for_apiculture_0_19": [28,25],
+  "tile_for_apiculture_0_20": [31,21],
+  "tile_for_apiculture_0_21": [31,25]
+
+  "tile_for_apiculture_0_22": [28,31],
+  "tile_for_apiculture_0_23": [28,35],
+  "tile_for_apiculture_0_24": [31,35],
+  "tile_for_apiculture_0_25": [31,31],
+
+  "tile_for_apiculture_0_26": [24,12],
+  "tile_for_apiculture_0_27": [21,12],
+  "tile_for_apiculture_0_28": [24,16],
+  "tile_for_apiculture_0_29": [21,16],
+
+  "tile_for_apiculture_0_30": [16,12],
+  "tile_for_apiculture_0_31": [13,12],
+  "tile_for_apiculture_0_32": [16,16],
+  "tile_for_apiculture_0_33": [13,16]
+
+}
