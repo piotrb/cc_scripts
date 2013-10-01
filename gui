@@ -62,10 +62,33 @@ function window()
   info.add = function(control)
     table.insert(info.widgets, control)
   end
+  info.click = function(x, y)
+    for i,control in ipairs(info.widgets) do
+      if x >= control.position.x and y >= control.position.y then
+        click_x = x - control.position.x + 1
+        click_y = y - control.position.y + 1
+        if click_x <= control.size.width and click_y <= control.size.height then
+          control.click(click_x,click_y)
+        end
+      end
+    end
+  end
+  info.handleMouse = function()
+    kind, p1, p2, p3, p4, p5 = os.pullEvent("mouse_click")
+    if kind == "mouse_click" then
+      button = p1
+      x = p2
+      y = p3
+      info.click(x,y)
+    end
+  end
   return info;
 end
 
 function labelBox(x, y, w, h, text, align)
+  if align == nil then
+    align = "left"
+  end
   local info = {
     text = text,
     align = align,
@@ -73,6 +96,8 @@ function labelBox(x, y, w, h, text, align)
     size = { width = w, height = h },
   }
   info.update = function()
+  end
+  info.click = function(x,y)
   end
   info.render = function(t)
     local _text
@@ -96,6 +121,9 @@ function labelBox(x, y, w, h, text, align)
 end
 
 function label(x, y, w, h, text, align, prefix)
+  if align == nil then
+    align = "left"
+  end
   local info = {
     text = text,
     align = align,
@@ -104,6 +132,8 @@ function label(x, y, w, h, text, align, prefix)
     size = { width = w, height = h },
   }
   info.update = function()
+  end
+  info.click = function(x,y)
   end
   info.render = function(t)
     local _text
@@ -129,12 +159,50 @@ function hr(y, character)
   local info = {
     character = y, character,
     position = { x = 1, y = y },
+    size = { height = 1 },
   }
+
   info.update = function()
   end
+  info.click = function(x,y)
+  end
   info.render = function(t)
+    if info.size.width == nil then
+      sw,sh = t.getSize()
+      info.size.width = sw -- initialize it on first render
+    end
     t.setCursorPos(info.position.x, info.position.y)
     utils.hrM(t)
+  end
+  return info;
+end
+
+function button(x, y, w, h, label, onClick, onUpdate)
+  local info = {
+    position = { x = x, y = y },
+    size = { width = w, height = h },
+    label = label,
+    active = false,
+    onClick = onClick,
+    onUpdate = onUpdate,
+  }
+  info.update = function()
+    if info.onUpdate then
+      info.onUpdate(info)
+    end
+  end
+  info.click = function(x,y)
+    info.onClick(info, x,y)
+  end
+  info.render = function(t)
+    if info.active then
+      t.setTextColor(colors.red)
+    else
+      t.setTextColor(colors.white)
+    end
+    t.setCursorPos(info.position.x, info.position.y)
+    t.write(info.label)
+    t.setTextColor(colors.white)
   end
   return info;
 end
