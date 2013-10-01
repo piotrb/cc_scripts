@@ -1,6 +1,6 @@
 os.loadAPI("json")
 os.loadAPI("utils")
--- os.loadAPI("gui")
+os.loadAPI("gui")
 os.loadAPI("config")
 
 -- utils.p(utils.detectPeripherals())
@@ -15,12 +15,16 @@ if config.data.upperLimit == nil then
   config.data.upperLimit = 95
 end
 
+if config.data.senseSide == nil then
+  config.data.senseSide = "front"
+end
+
 sides = {
   "top",
   "bottom",
   "left",
   "right",
-  -- "front",
+  "front",
   "back",
 }
 
@@ -51,14 +55,18 @@ function setInfo()
   info.tankCapacity = 0
   info.tankAmount = 0
   info.tankPercentage = 0.0
-  tank = peripheral.wrap("front")
+  tank = peripheral.wrap(config.data.senseSide)
   if tank then
-    info.tankName = peripheral.getType("front")
-    local tableInfo = tank.getTanks("unknown")
-    if tableInfo and tableInfo[1] then
-      info.tankCapacity = tableInfo[1].capacity or 0
-      info.tankAmount = tableInfo[1].amount or 0
-      info.tankPercentage = round(info.tankAmount / info.tankCapacity, 2)
+    info.tankName = peripheral.getType(config.data.senseSide)
+    if tank.getTankInfo then
+      local tableInfo = tank.getTankInfo("unknown")
+      if tableInfo and tableInfo[1] then
+        info.tankCapacity = tableInfo[1].capacity or 0
+        info.tankAmount = tableInfo[1].amount or 0
+        info.tankPercentage = round(info.tankAmount / info.tankCapacity, 2)
+      end
+    else
+      info.tankName = info.tankName .. " (not a tank)"
     end
   end
 end
@@ -77,75 +85,129 @@ function handleInfo()
   end
 end
 
-function handleKey(key)
-  if key == keys.u then -- upper +1
-    config.data.upperLimit = config.data.upperLimit - 10
-    config.write()
-  elseif key == keys.i then -- upper +10
-    config.data.upperLimit = config.data.upperLimit - 1
-    config.write()
-  elseif key == keys.o then -- upper -10
-    config.data.upperLimit = config.data.upperLimit + 1
-    config.write()
-  elseif key == keys.p then -- upper -1
-    config.data.upperLimit = config.data.upperLimit + 10
-    config.write()
-  elseif key == keys.h then -- lower +1
-    config.data.lowerLimit = config.data.lowerLimit - 10
-    config.write()
-  elseif key == keys.j then -- lower +10
-    config.data.lowerLimit = config.data.lowerLimit - 1
-    config.write()
-  elseif key == keys.k then -- lower -10
-    config.data.lowerLimit = config.data.lowerLimit + 1
-    config.write()
-  elseif key == keys.l then -- lower -1
-    config.data.lowerLimit = config.data.lowerLimit + 10
-    config.write()
-  end
-
+function adjustUpperLimit(by)
+  config.data.upperLimit = config.data.upperLimit + by
   if config.data.upperLimit > 100 then
     config.data.upperLimit = 100
   end
   if config.data.upperLimit < 0 then
     config.data.upperLimit = 0
   end
+  config.write()
+end
+
+function adjustLowerLimit(by)
+  config.data.lowerLimit = config.data.lowerLimit + by
   if config.data.lowerLimit > 100 then
     config.data.lowerLimit = 100
   end
   if config.data.lowerLimit < 0 then
     config.data.lowerLimit = 0
   end
-
+  config.write()
 end
 
 window = gui.window()
-window.add(gui.label(1, 1, 20, 1, "Liquid Sensor: " .. computerName(), "center"))
-window.add(gui.hr(2, "-"))
 
-window.add(gui.label(1, 3, 20, 1, function()
+row = 1
+window.add(gui.label(1, row, 20, 1, "Liquid Sensor: " .. computerName(), "center"))
+
+row = row + 1
+window.add(gui.hr(row, "-"))
+
+row = row + 1
+window.add(gui.label(1, row, 20, 1, "Side: "))
+
+function sideButtonHandler(side_name)
+  return function(button, x, y)
+    config.data.senseSide = side_name
+    config.write()
+  end
+end
+
+function sideButtonUpdateHandler(side_name)
+  return function(button)
+    if config.data.senseSide == side_name then
+      button.active = true
+    else
+      button.active = false
+    end
+  end
+end
+
+ox = 7
+side_buttons = {}
+table.insert(side_buttons, gui.button(ox, row, 7, 1, "[Front]", sideButtonHandler("front"), sideButtonUpdateHandler("front")))
+ox = ox + 7
+table.insert(side_buttons, gui.button(ox, row, 6, 1, "[Back]", sideButtonHandler("back"), sideButtonUpdateHandler("back")))
+ox = ox + 6
+table.insert(side_buttons, gui.button(ox, row, 6, 1, "[Left]", sideButtonHandler("left"), sideButtonUpdateHandler("left")))
+ox = ox + 6
+table.insert(side_buttons, gui.button(ox, row, 7, 1, "[Right]", sideButtonHandler("right"), sideButtonUpdateHandler("right")))
+ox = ox + 7
+table.insert(side_buttons, gui.button(ox, row, 5, 1, "[Top]", sideButtonHandler("top"), sideButtonUpdateHandler("top")))
+ox = ox + 5
+table.insert(side_buttons, gui.button(ox, row, 11, 1, "[Bottom]", sideButtonHandler("bottom"), sideButtonUpdateHandler("bottom")))
+
+for i,button in ipairs(side_buttons) do
+  window.add(button)
+end
+
+row = row + 2
+window.add(gui.label(1, row, 20, 1, function()
   return "Monitoring: " .. info.tankName
 end))
 
-window.add(gui.label(1, 4, 20, 1, function()
+row = row + 1
+window.add(gui.label(1, row, 20, 1, function()
   return "Level: " .. info.tankAmount/1000 .. "/" .. info.tankCapacity/1000 .. " (" .. info.tankPercentage * 100 .. "%)"
 end))
 
-
-window.add(gui.label(1, 6, 20, 1, "Upper Limit:     "))
-window.add(gui.label(14, 6, 20, 1, function()
+row = row + 2
+window.add(gui.label(1, row, 20, 1, "Upper Limit:     "))
+window.add(gui.label(14, row, 20, 1, function()
   return config.data.upperLimit .. "%"
 end))
-window.add(gui.label(19, 6, 20, 1, "u:-10 i:-1 o:+1 p:+10"))
 
+window.add(gui.button(19, row, 5, 1, "[-10]", function(button, x,y)
+  adjustUpperLimit(-10)
+end))
 
-window.add(gui.label(1, 7, 20, 1, "Lower Limit:     "))
-window.add(gui.label(14, 7, 20, 1, function()
+window.add(gui.button(25, row, 4, 1, "[-1]", function(button, x,y)
+  adjustUpperLimit(-1)
+end))
+
+window.add(gui.button(30, row, 4, 1, "[+1]", function(button, x,y)
+  adjustUpperLimit(1)
+end))
+
+window.add(gui.button(35, row, 5, 1, "[+10]", function(button, x,y)
+  adjustUpperLimit(10)
+end))
+
+row = row + 1
+window.add(gui.label(1, row, 20, 1, "Lower Limit:     "))
+window.add(gui.label(14, row, 20, 1, function()
   return config.data.lowerLimit .. "%"
 end))
-window.add(gui.label(19, 7, 20, 1, "h:-10 j:-1 k:+1 l:+10"))
+window.add(gui.button(19, row, 5, 1, "[-10]", function(button, x,y)
+  adjustLowerLimit(-10)
+end))
 
-window.add(gui.label(1, 9, 20, 1, function()
+window.add(gui.button(25, row, 4, 1, "[-1]", function(button, x,y)
+  adjustLowerLimit(-1)
+end))
+
+window.add(gui.button(30, row, 4, 1, "[+1]", function(button, x,y)
+  adjustLowerLimit(1)
+end))
+
+window.add(gui.button(35, row, 5, 1, "[+10]", function(button, x,y)
+  adjustLowerLimit(10)
+end))
+
+row = row + 2
+window.add(gui.label(1, row, 20, 1, function()
   local stateString
   if state then
     stateString = "on"
@@ -160,18 +222,19 @@ setInfo()
 handleInfo()
 emit()
 
+window.update()
 window.render(term)
 
 while true do
-  parallel.waitForAny(function()
-    event, a1, a2, a3, a4, a5, a6 = os.pullEvent("key")
-    handleKey(a1)
-  end,
+  parallel.waitForAny(
   function()
     sleep(0.1)
     setInfo()
     handleInfo()
     emit()
-  end)
+  end,
+  window.handleMouse
+  )
+  window.update()
   window.render(term)
 end
