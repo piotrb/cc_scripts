@@ -1,3 +1,5 @@
+-- vim: ft=lua:
+
 rel_pos = {x = 0, y = 0, z = 0}
 rel_rot = 0
 

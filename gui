@@ -1,3 +1,5 @@
+-- vim: ft=lua:
+
 function select(t, title, items)
 
   local cursor = 1

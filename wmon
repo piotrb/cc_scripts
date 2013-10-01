@@ -1,3 +1,5 @@
+-- vim: ft=lua:
+
 os.loadAPI("utils")
 os.loadAPI("wlan")
 

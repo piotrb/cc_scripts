@@ -1,3 +1,5 @@
+-- vim: ft=lua:
+
 if fs.exists("disk/install.lua") then
   os.run({}, "disk/install.lua")
 else

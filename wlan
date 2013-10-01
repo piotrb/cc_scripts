@@ -1,3 +1,5 @@
+-- vim: ft=lua:
+
 modem = nil
 channel = nil
 handlers = {}
