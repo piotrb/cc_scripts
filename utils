@@ -118,6 +118,9 @@ function printMCenter(t, text)
   local tx, ty = t.getSize()
   local len = string.len(text)
   local ox = (tx/2) - (len/2)
+  if ox <= 0 then
+    ox = 1
+  end
   text = string.rep(" ", ox) .. text
   printM(t, text)
 end

@@ -1,13 +1,20 @@
 local configuration = {}
 
+function encode(o)
+  -- return encodeWithJson(o)
+  return encodeWithSerialize(o)
+end
+
+function decode(o)
+  -- return decodeWithJson(o)
+  return decodeWithSerialize(o)
+end
+
 function read()
   if fs.exists(configuration.filename) then
     local fh = fs.open(configuration.filename, "r")
     local raw = fh.readAll()
-    if raw == "[]" then
-      raw = "{}"
-    end
-    local data = json.decode(raw)
+    local data = decode(raw)
     fh.close()
     config.data = data
   else
@@ -22,6 +29,29 @@ end
 
 function write()
   local fh = fs.open(configuration.filename, "w")
-  fh.write(json.encode(config.data))
+  fh.write(encode(config.data))
   fh.close()
+end
+
+-- JSON
+
+function encodeWithJson(o)
+  return json.encode(o)
+end
+
+function decodeWithJson(raw)
+  if raw == "[]" then
+    raw = "{}"
+  end
+  return json.decode(raw)
+end
+
+-- SERIALIZE
+
+function encodeWithSerialize(o)
+  return textutils.serialize(o)
+end
+
+function decodeWithSerialize(raw)
+  return textutils.unserialize(raw)
 end

@@ -1,78 +1,181 @@
 -- vim: ft=lua:
 
-function select(t, title, items)
-
-  local cursor = 1
-  local waiting = true
-  local maxCursor = #items
-
-  local render = function()
-    utils.clearM(t)
-    utils.printMCenter(t, title)
-    utils.hrM(t)
-    -- utils.printMCenter(term, cursor)
-
-    for i, info in ipairs(items) do
-      local marker = " "
-      if cursor == i then
-        marker = "X"
-      end
-      local line = "[" .. marker .. "] " .. info[2]
-      utils.printM(t, line)
-    end
-  end
-
-  while waiting do
-    render()
-    event, arg1 = os.pullEvent("key")
-    if arg1 == keys.up then
-      if cursor > 1 then
-        cursor = cursor - 1
-      end
-    elseif arg1 == keys.down then
-      if cursor < maxCursor then
-        cursor = cursor + 1
-      end
-    elseif arg1 == keys.enter then
-      waiting = false
-      return(items[cursor][1])
-    else
-      -- utils.p({event, arg1})
-      -- sleep(1)
-    end
-  end
-
-end
-
-function window()
+function select(x, y, items, onSelect)
   local info = {
-    widgets = {},
+    position = { x = x, y = y },
+    size = { width = 0, height = #items + 2 },
+    onSelect = onSelect,
   }
-  info.render = function(t)
-    utils.clearM(t)
-    for i,control in ipairs(info.widgets) do
-      control.render(t)
+
+  local widgets = {}
+  local cy = info.position.y
+  for i, item in pairs(items) do
+    -- utils.p(item)
+    sx = string.len(item[2])
+    table.insert(widgets, gui.button(1, cy, sx, 1, item[2], function(_button, x, y)
+      info.onSelect(item[1])
+    end))
+    cy = cy + 1
+  end
+
+  for i, widget in pairs(widgets) do
+    if widget.size.width > info.size.width then
+      info.size.width = widget.size.width
     end
   end
+
+  cy = cy + 1
+  table.insert(widgets, gui.button(1, cy, 8, 1, "[cancel]", function(button, x, y)
+    info.onSelect(nil)
+  end))
+
   info.update = function()
-    for i,control in ipairs(info.widgets) do
-      control.update()
+    for i, widget in pairs(widgets) do
+      widget.update(t)
     end
   end
-  info.add = function(control)
-    table.insert(info.widgets, control)
+
+  info.render = function(t)
+    for i, widget in pairs(widgets) do
+      widget.render(t)
+    end
   end
-  info.click = function(x, y)
-    for i,control in ipairs(info.widgets) do
-      if x >= control.position.x and y >= control.position.y then
-        click_x = x - control.position.x + 1
-        click_y = y - control.position.y + 1
-        if click_x <= control.size.width and click_y <= control.size.height then
-          control.click(click_x,click_y)
+
+  info.click = function(click_x, click_y)
+    for i, widget in pairs(widgets) do
+      if _clickIsInBounds(widget, click_x, click_y) then
+        if widget.click(click_x,click_y) then
+          return
         end
       end
     end
   end
+
+  -- local waiting = true
+  -- local maxCursor = #items
+  -- 
+  -- local render = function()
+  --   utils.clearM(t)
+  --   utils.printMCenter(t, title)
+  --   utils.hrM(t)
+  --   -- utils.printMCenter(term, cursor)
+  -- 
+  --   for i, info in ipairs(items) do
+  --     if type(info) == "string" then
+  --       old_info = info
+  --       info = { old_info, old_info }
+  --     end
+  --     local marker = " "
+  --     if cursor == i then
+  --       marker = "X"
+  --     end
+  --     local line = "[" .. marker .. "] " .. info[2]
+  --     utils.printM(t, line)
+  --   end
+  -- end
+  -- 
+  -- while waiting do
+  --   render()
+  --   event, arg1 = os.pullEvent("key")
+  --   if arg1 == keys.up then
+  --     if cursor > 1 then
+  --       cursor = cursor - 1
+  --     end
+  --   elseif arg1 == keys.down then
+  --     if cursor < maxCursor then
+  --       cursor = cursor + 1
+  --     end
+  --   elseif arg1 == keys.enter then
+  --     waiting = false
+  --     row = items[cursor]
+  --     if type(row) == "table" then
+  --       return(row[1])
+  --     else
+  --       return(row)
+  --     end
+  --   else
+  --     -- utils.p({event, arg1})
+  --     -- sleep(1)
+  --   end
+  -- end
+  return info;
+end
+
+function controller()
+  local info = {
+    windows = {},
+  }
+
+  info.render = function()
+    for i, window in pairs(info.windows) do
+      if window.enabled then
+        window.render()
+      end
+    end
+  end
+
+  info.disableAllWindows = function()
+    for i, window in pairs(info.windows) do
+      window.disableNextUpdate = true
+      -- window.enabled = false
+    end
+  end
+
+  info.enableAllWindows = function()
+    for i, window in pairs(info.windows) do
+      window.enableNextUpdate = true
+      -- window.enabled = true
+    end
+  end
+
+  info.update = function()
+    for i, window in ipairs(info.windows) do
+      if window.disableNextUpdate then
+        sleep(0.01)
+        window.disableNextUpdate = false
+        window.enabled = false
+        window.clear()
+      end
+      if window.enableNextUpdate then
+        window.enableNextUpdate = false
+        window.enabled = true
+      end
+      if window.removeNextUpdate then
+        window.removeNextUpdate = false
+        table.remove(info.windows, i)
+      end
+    end
+    for i, window in pairs(info.windows) do
+      if window.enabled then
+        window.update()
+      end
+    end
+  end
+
+  info.add = function(_window)
+    table.insert(info.windows, _window)
+  end
+
+  info.remove = function(_window)
+    for i, window in pairs(info.windows) do
+      if window == _window then
+        window.removeNextUpdate = true
+        -- table.remove(info.windows, i)
+        -- return
+      end
+    end
+  end
+
+  info.click = function(x, y)
+    for i, window in pairs(info.windows) do
+      if window.enabled then
+        if window.click(x,y) then
+          return
+        end
+      end
+    end
+  end
+
   info.handleMouse = function()
     kind, p1, p2, p3, p4, p5 = os.pullEvent("mouse_click")
     if kind == "mouse_click" then
@@ -80,6 +183,52 @@ function window()
       x = p2
       y = p3
       info.click(x,y)
+    end
+  end
+  return info
+end
+
+function _clickIsInBounds(control, click_x, click_y)
+  if x >= control.position.x and y >= control.position.y then
+    click_x = x - control.position.x + 1
+    click_y = y - control.position.y + 1
+    if click_x <= control.size.width and click_y <= control.size.height then
+      return true
+    end
+  end
+  return false
+end
+
+function window(term)
+  local info = {
+    widgets = {},
+    enabled = true,
+    terminal = term,
+  }
+  info.clear = function()
+    utils.clearM(info.terminal)
+  end
+  info.render = function()
+    info.clear()
+    for i,control in pairs(info.widgets) do
+      control.render(info.terminal)
+    end
+  end
+  info.update = function()
+    for i,control in pairs(info.widgets) do
+      control.update()
+    end
+  end
+  info.add = function(control)
+    table.insert(info.widgets, control)
+  end
+  info.click = function(x, y)
+    for i,control in pairs(info.widgets) do
+      if _clickIsInBounds(control, click_x, click_y) then
+        if control.click(click_x,click_y) then
+          return
+        end
+      end
     end
   end
   return info;
@@ -132,6 +281,9 @@ function label(x, y, w, h, text, align, prefix)
     size = { width = w, height = h },
   }
   info.update = function()
+    if info.onUpdate then
+      info.onUpdate(info)
+    end
   end
   info.click = function(x,y)
   end
@@ -159,7 +311,7 @@ function hr(y, character)
   local info = {
     character = y, character,
     position = { x = 1, y = y },
-    size = { height = 1 },
+    size = { height = 1, width = 1 },
   }
 
   info.update = function()
@@ -185,6 +337,7 @@ function button(x, y, w, h, label, onClick, onUpdate)
     active = false,
     onClick = onClick,
     onUpdate = onUpdate,
+    justTouched = false,
   }
   info.update = function()
     if info.onUpdate then
@@ -192,13 +345,19 @@ function button(x, y, w, h, label, onClick, onUpdate)
     end
   end
   info.click = function(x,y)
+    info.justTouched = true
     info.onClick(info, x,y)
+    return true
   end
   info.render = function(t)
     if info.active then
       t.setTextColor(colors.red)
     else
       t.setTextColor(colors.white)
+    end
+    if info.justTouched then
+      t.setTextColor(colors.yellow)
+      info.justTouched = false
     end
     t.setCursorPos(info.position.x, info.position.y)
     t.write(info.label)

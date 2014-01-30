@@ -15,3 +15,9 @@ function table.copy(t)
   end
   return t2
 end
+
+function table.set (list)
+  local set = {}
+  for _, l in ipairs(list) do set[l] = true end
+  return set
+end
