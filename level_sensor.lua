@@ -34,7 +34,7 @@ sides = {
 }
 
 function emit()
-  for i, side in ipairs(config.data.redstoneSide) do
+  for side, _on in pairs(config.data.redstoneSide) do
     redstone.setOutput(side, state)
   end
 end
@@ -111,7 +111,9 @@ function setInfo()
 end
 
 function handleInfo()
-  if not info.type == "none" then
+  if info.type == "none" then
+    state = false
+  else
     if state then
       -- if on, turn off at the upper limit
       if (info.percentage * 100) >= config.data.upperLimit then
